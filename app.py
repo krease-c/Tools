@@ -1,8 +1,9 @@
+
 from flask import Flask, request, redirect, make_response, render_template_string
 
 app = Flask(__name__)
 
-FLAG = "flag{C0okie_monster_w4s_h3r3}"
+FLAG = "flag{Co0kie_monst3r_w4s_her3}"
 
 # --- HTML + CSS Templates ---
 
@@ -165,17 +166,26 @@ def index():
     username = request.cookies.get("username")
     role = request.cookies.get("role")
 
+    # If a tampered admin cookie exists, clear it
+    if role == "admin" and username != "admin":
+        resp = make_response(redirect("/"))
+        resp.delete_cookie("username")
+        resp.delete_cookie("role")
+        return resp
+
+    # If already logged in
     if username:
         flag = FLAG if role == "admin" else None
         return render_template_string(dashboard_page, user=username, role=role, flag=flag)
 
+    # Handle login
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
 
         resp = make_response(redirect("/"))
-        resp.set_cookie("username", username)
-        resp.set_cookie("role", "user")
+        resp.set_cookie("username", username, httponly=True)  # session-only
+        resp.set_cookie("role", "user", httponly=True)        # session-only
         return resp
 
     return login_page
@@ -191,4 +201,3 @@ def logout():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
-
